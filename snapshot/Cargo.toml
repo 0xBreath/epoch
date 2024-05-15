@@ -1,0 +1,26 @@
+[package]
+name = "snapshot"
+version = { workspace = true }
+edition = { workspace = true }
+
+[dependencies]
+anyhow = { workspace = true }
+bincode = { workspace = true }
+common = { path = "../common" }
+crossbeam-channel = { workspace = true }
+itertools = { workspace = true }
+log = { workspace = true }
+memmap2 = { workspace = true }
+num_cpus = { workspace = true }
+rayon = { workspace = true }
+reqwest = { workspace = true }
+serde = { workspace = true }
+serde_bytes = { workspace = true }
+serde_json = { workspace = true }
+solana-accounts-db = { workspace = true }
+solana-runtime = { workspace = true }
+solana-sdk = { workspace = true }
+tar = { workspace = true }
+thiserror = { workspace = true }
+tokio = { workspace = true }
+zstd = { workspace = true }

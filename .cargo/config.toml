@@ -1,0 +1,15 @@
+# For more config options:
+# https://doc.rust-lang.org/cargo/reference/config.html
+
+[registries.epoch]
+index = "ssh://git@ssh.shipyard.rs/yourShipyardName/crate-index.git"
+token = "someKeyHere"
+
+[registry]
+global-credential-providers = ["cargo:token"]
+
+[net.ssh]
+known-hosts = ["ssh.shipyard.rs ecdsa-sha2-nistp256 someKeyHere"]
+
+[net]
+git-fetch-with-cli = true
