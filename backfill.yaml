@@ -6,8 +6,8 @@ programs:
   - dRiftyHA39MWEi3m9aunc5MzRF1JYuBsbn6VPcn33UH # drift v2
   - jupoNjAxXgZ4rjzxzPMP4oxduvQsQtZzyknqvzYNrNu # Jupiter limit
   - PERPHjGBqRHArX4DySjwM6UJHiR3sWAatqfdBS2qQJu # Jupiter perp
-#  - JUP6LkbZbjS1jKKwapdHNy74zcZ3tLUZoi5QNyVTaV4 # Jupiter swap
-#  - PhoeNiXZ8ByJGLkxNfZRnkUfjvmuYqLR89jjFHGqdXY # Phoenix
+  - JUP6LkbZbjS1jKKwapdHNy74zcZ3tLUZoi5QNyVTaV4 # Jupiter swap
+  - PhoeNiXZ8ByJGLkxNfZRnkUfjvmuYqLR89jjFHGqdXY # Phoenix
 
 
 # Most historical date to backfill
@@ -22,7 +22,5 @@ gcs_bucket: mainnet-beta-ledger-us-ny5
 # Optional local file with GCS snapshot object data. If not provided, the snapshot will be downloaded from GCS
 gcs_local_file: gcs_snapshots.json
 
-# Google service account credentials. Used to write to BigQuery database.
-gcs_sa_key: epoch_sa_key.json
-
-timescale_db: postgres://tsdbadmin:uf4eakx5fmlnjmn2@j2ar0fxl57.b5o7u5bwsb.tsdb.cloud.timescale.com:37602/tsdb?sslmode=require
+# Optional if you want to dump accounts to a Timescale database
+timescale_db: postgres://[username]:[password]@[host]:[port]/[db]?sslmode=require

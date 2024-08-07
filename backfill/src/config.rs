@@ -21,10 +21,8 @@ pub struct BackfillConfig {
   pub gcs_bucket: String,
   /// Optional local file path to gcs [`ObjectResponse`]. Primarily for development to speed up iteration.
   pub gcs_local_file: Option<String>,
-  /// GCS service account JSON file
-  pub gcs_sa_key: String,
-  /// Timescale db connection url
-  pub timescale_db: String
+  /// Optional Timescale database
+  pub timescale_db: Option<String>,
 }
 
 impl BackfillConfig {
@@ -33,9 +31,7 @@ impl BackfillConfig {
                                    D: Deserializer<'de>,
   {
     let keys: Vec<String> = Vec::deserialize(deserializer)?;
-    keys.into_iter()
-        .map(|pubkey| Pubkey::from_str(&pubkey).map_err(serde::de::Error::custom))
-        .collect()
+    keys.into_iter().map(|pubkey| Pubkey::from_str(&pubkey).map_err(serde::de::Error::custom)).collect()
   }
 
   fn deserialize_date<'de, D>(deserializer: D) -> Result<DateTime<Utc>, D::Error>
@@ -55,16 +51,15 @@ impl BackfillConfig {
     let yyyy = &date.split('-').collect::<Vec<&str>>()[0];
     let mm = &date.split('-').collect::<Vec<&str>>()[1];
     let dd = &date.split('-').collect::<Vec<&str>>()[2];
-    let dt_fixed =
-      match DateTime::parse_from_rfc3339(&format!("{}-{}-{}T00:00:00Z", yyyy, mm, dd)) {
-        Ok(dr) => dr,
-        Err(e) => {
-          return Err(serde::de::Error::custom(format!(
-            "Failed to parse date: {}",
-            e
-          )))
-        }
-      };
+    let dt_fixed = match DateTime::parse_from_rfc3339(&format!("{}-{}-{}T00:00:00Z", yyyy, mm, dd)) {
+      Ok(dr) => dr,
+      Err(e) => {
+        return Err(serde::de::Error::custom(format!(
+          "Failed to parse date: {}",
+          e
+        )))
+      }
+    };
     let dt = DateTime::<Utc>::from(dt_fixed);
     Ok(dt)
   }

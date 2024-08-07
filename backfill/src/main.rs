@@ -33,13 +33,16 @@ fn main() -> anyhow::Result<()> {
 
   let config = BackfillConfig::read_config(&args.config_file_path)?;
 
-  let rt = tokio::runtime::Builder::new_multi_thread()
-    .enable_all()
-    .build()?;
+  let rt = tokio::runtime::Builder::new_multi_thread().enable_all().build()?;
 
-  let mut timescale = rt.block_on(async move {
-    TimescaleClient::new_from_url(config.timescale_db).await
-  })?;
+  let mut timescale: Option<TimescaleClient> = match config.timescale_db {
+    None => None,
+    Some(timescale_db) => {
+      Some(rt.block_on(async move {
+        TimescaleClient::new_from_url(timescale_db).await
+      })?)
+    }
+  };
 
   let bucket = config.gcs_bucket;
   let metas: Vec<SnapshotMeta> = rt.block_on(async move {
@@ -61,18 +64,14 @@ fn main() -> anyhow::Result<()> {
   // slice SnapshotMetas to range config wants to backfill
   let start = config.start_date;
   let end = config.end_date;
-  let metas: Vec<_> = metas
-    .into_iter()
-    .filter(|m| m.snapshot.time_created >= start && m.snapshot.time_created <= end)
-    .collect();
+  let metas: Vec<_> = metas.into_iter().filter(|m| m.snapshot.time_created >= start && m.snapshot.time_created <= end).collect();
   info!(
       "Snapshot date range to backfill: {} - {}",
       metas.first().unwrap().datetime(),
       metas.last().unwrap().datetime()
   );
 
-  let (tx, rx) =
-    crossbeam_channel::unbounded::<ChannelEvent<ArchiveAccount>>();
+  let (tx, rx) = crossbeam_channel::unbounded::<ChannelEvent<ArchiveAccount>>();
   let programs = Arc::new(config.programs);
   rt.spawn(async move {
     let programs = programs.clone();
@@ -86,27 +85,30 @@ fn main() -> anyhow::Result<()> {
       match msg {
         ChannelEvent::Msg(account) => {
           if programs.contains(&account.owner) {
-            let timescale_acct = TimescaleAccount::new(account);
-
-            if buffer.full() {
-              let take = buffer.take();
-              assert!(buffer.is_empty());
-              if let Err(e) = timescale.upsert_accounts(take).await {
-                error!("Failed to upsert accounts: {:#?}", e);
-              } else {
-                total_read += BUFFER_SIZE;
-                info!("Total accounts processed: {}", total_read)
+            if let Some(timescale) = &mut timescale {
+              let timescale_acct = TimescaleAccount::new(account);
+              if buffer.full() {
+                let take = buffer.take();
+                assert!(buffer.is_empty());
+                if let Err(e) = timescale.upsert_accounts(take).await {
+                  error!("Failed to upsert accounts: {:#?}", e);
+                } else {
+                  total_read += BUFFER_SIZE;
+                  info!("Total accounts processed: {}", total_read)
+                }
               }
+              buffer.push(timescale_acct);
             }
-            buffer.push(timescale_acct);
           }
         }
         ChannelEvent::Done => {
           info!("Snapshot done");
-          if let Err(e) = timescale.upsert_accounts(buffer.take()).await {
-            error!("Failed to upsert accounts: {:#?}", e);
+          if let Some(timescale) = &mut timescale {
+            if let Err(e) = timescale.upsert_accounts(buffer.take()).await {
+              error!("Failed to upsert accounts: {:#?}", e);
+            }
+            info!("Total accounts processed: {}", total_read);
           }
-          info!("Total accounts processed: {}", total_read);
         }
       }
     }
@@ -130,22 +132,5 @@ fn main() -> anyhow::Result<()> {
       }
     }
   }
-  // metas.into_par_iter().try_for_each(|meta| {
-  //   let source = meta.snapshot.url.clone();
-  //   info!("Backfilling snapshot: {:#?}", &meta.datetime());
-  //   match stream_archived_accounts(source, sender.clone()) {
-  //     Ok(_) => {
-  //       info!(
-  //           "Done snapshot {} for slot {}",
-  //           &meta.datetime(),
-  //           &meta.snapshot.slot
-  //       );
-  //     }
-  //     Err(e) => {
-  //       error!("Error backfilling snapshot: {}", e);
-  //     }
-  //   }
-  //   Result::<_, anyhow::Error>::Ok(())
-  // })
   Ok(())
 }

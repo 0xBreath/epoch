@@ -48,7 +48,34 @@ cargo make setup-timescale
 
 Epoch reads the `backfill.yaml` config file which defines the snapshots to pull from Google Cloud Storage (GCS), the
 GCS bucket to pull from, the number of workers/threads to parallelize tasks, and the Solana programs to filter for.
-Run:
+Example:
+
+```yaml
+# Maximum number of cores to use for processing.
+max_workers: 4
+
+# Only these programs will be uploaded to Timescale.
+programs:
+  - dRiftyHA39MWEi3m9aunc5MzRF1JYuBsbn6VPcn33UH # drift v2
+  - jupoNjAxXgZ4rjzxzPMP4oxduvQsQtZzyknqvzYNrNu # Jupiter limit
+  - PERPHjGBqRHArX4DySjwM6UJHiR3sWAatqfdBS2qQJu # Jupiter perp
+  - JUP6LkbZbjS1jKKwapdHNy74zcZ3tLUZoi5QNyVTaV4 # Jupiter swap
+  - PhoeNiXZ8ByJGLkxNfZRnkUfjvmuYqLR89jjFHGqdXY # Phoenix
+
+# Most historical date to backfill
+# Format is yyyy-mm-dd
+start_date: 2024-02-05
+# Most recent date to backfill
+# Format is yyyy-mm-dd
+end_date: 2024-05-08
+gcs_bucket: mainnet-beta-ledger-us-ny5
+# Optional local file with GCS snapshot object data. If not provided, the snapshot will be downloaded from GCS
+gcs_local_file: gcs_snapshots.json
+# Optional if you want to dump accounts to a Timescale database
+timescale_db: postgres://[username]:[password]@[host]:[port]/[db]?sslmode=require
+```
+
+Run this command to start uploading decoded accounts from BigTable to Timescale
 
 ```shell
 cargo make backfill
